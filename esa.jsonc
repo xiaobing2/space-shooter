@@ -1,34 +1,9 @@
 {
-  "name": "3D 太空射击游戏",
-  "version": "1.0.0",
-  "description": "一个基于 Three.js 和 Cannon.js 的 3D 太空射击游戏",
-  "author": "Your Name <your.email@example.com>",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/space-shooter.git"
-  },
-  "license": "MIT",
-  "keywords": [
-    "three.js",
-    "cannon.js",
-    "vue3",
-    "typescript",
-    "game"
-  ],
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "three": "^0.160.0",
-    "cannon": "^0.6.2",
-    "vue": "^3.3.0",
-    "@vitejs/plugin-vue": "^4.5.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue-jsx": "^3.1.0",
-    "typescript": "^5.0.0",
-    "vite": "^5.0.0"
+  "name": "space-shooter",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "assets": {
+    "directory": "./dist",
+    "notFoundStrategy": "singlePageApplication"
   }
 }
