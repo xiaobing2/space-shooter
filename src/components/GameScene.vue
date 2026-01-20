@@ -91,19 +91,24 @@ const resetGame = () => {
 };
 
 const cleanupGame = () => {
-  bullets.value.forEach(b => { 
-    scene.remove(b.mesh); 
-    world.remove(b.body); 
+  // 清理子弹
+  bullets.value.forEach(bullet => {
+    scene.remove(bullet.mesh);
+    world.remove(bullet.body);
   });
   bullets.value = [];
   
-  enemies.value.forEach(e => { 
-    scene.remove(e.mesh); 
-    world.remove(e.body); 
+  // 清理敌人
+  enemies.value.forEach(enemy => {
+    scene.remove(enemy.mesh);
+    world.remove(enemy.body);
   });
   enemies.value = [];
   
-  explosions.value.forEach(e => scene.remove(e.mesh));
+  // 清理爆炸效果
+  explosions.value.forEach(explosion => {
+    scene.remove(explosion.mesh);
+  });
   explosions.value = [];
 };
 
@@ -115,7 +120,12 @@ const createExplosion = (position: THREE.Vector3) => {
     positions[i] = (Math.random() - 0.5) * 2;
   }
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  const material = new THREE.PointsMaterial({ size: 0.2, color: 0xffa500, transparent: true, blending: THREE.AdditiveBlending });
+  const material = new THREE.PointsMaterial({ 
+    size: 0.2, 
+    color: 0xffa500, 
+    transparent: true, 
+    blending: THREE.AdditiveBlending 
+  });
   const points = new THREE.Points(geometry, material);
   points.position.copy(position);
   scene.add(points);
@@ -152,7 +162,10 @@ const createEnemy = () => {
   const y = Math.sin(angle) * distance;
 
   const geometry = new THREE.ConeGeometry(0.6, 1.2, 4);
-  const material = new THREE.MeshPhongMaterial({ color: 0xff0000, flatShading: true });
+  const material = new THREE.MeshPhongMaterial({ 
+    color: 0xff0000, 
+    flatShading: true 
+  });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, 0);
   scene.add(mesh);
@@ -171,7 +184,11 @@ const createEnemy = () => {
 // 玩家动作
 const shoot = () => {
   if (bullets.value.length >= maxBullets) return;
-  const direction = new THREE.Vector3(Math.sin(playerRotation), -Math.cos(playerRotation), 0).normalize();
+  const direction = new THREE.Vector3(
+    Math.sin(playerRotation), 
+    -Math.cos(playerRotation), 
+    0
+  ).normalize();
   const startPos = new THREE.Vector3().copy(player.position).add(direction.multiplyScalar(1));
   createBullet(startPos, direction);
 };
@@ -338,31 +355,34 @@ const gameLoop = () => {
 onMounted(() => {
   if (!gameCanvas.value) return;
   
-  // Scene setup
+  // 场景设置
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.z = 15;
   
+  // 渲染器设置
   renderer = new THREE.WebGLRenderer({ 
     canvas: gameCanvas.value, 
     antialias: true 
   });
-  
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
 
-  // Physics setup
+  // 物理世界设置
   world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) });
 
-  // Lights
+  // 光源设置
   scene.add(new THREE.AmbientLight(0x404040));
   const dirLight = new THREE.DirectionalLight(0xffffff, 1);
   dirLight.position.set(5, 5, 5);
   scene.add(dirLight);
 
-  // Player setup
+  // 玩家设置
   const playerGeo = new THREE.ConeGeometry(0.5, 1, 4);
-  const playerMat = new THREE.MeshPhongMaterial({ color: 0x00ff00, flatShading: true });
+  const playerMat = new THREE.MeshPhongMaterial({ 
+    color: 0x00ff00, 
+    flatShading: true 
+  });
   player = new THREE.Mesh(playerGeo, playerMat);
   scene.add(player);
   
@@ -373,10 +393,9 @@ onMounted(() => {
     shape: playerShape, 
     linearDamping: 0.8 
   });
-  
   world.addBody(playerBody);
 
-  // Event Listeners
+  // 事件监听器
   const onResize = () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -428,13 +447,13 @@ onMounted(() => {
   font-family: 'Arial', sans-serif;
   text-align: center;
   z-index: 10;
+  pointer-events: none;
 }
 
 .hud {
   top: 20px;
   left: 20px;
   text-align: left;
-  pointer-events: none;
 }
 
 .hud > div {
@@ -447,43 +466,45 @@ onMounted(() => {
 }
 
 .start-screen, .game-over {
-  top: 0; 
-  left: 0; 
+  top: 0;
+  left: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   background-color: rgba(0, 0, 0, 0.7);
+  pointer-events: auto;
 }
 
-h1 { 
-  font-size: 4em; 
-  text-shadow: 0 0 10px #00ffff; 
+h1 {
+  font-size: 4em;
+  text-shadow: 0 0 10px #00ffff;
   margin-bottom: 20px;
 }
 
-p { 
-  font-size: 1.5em; 
+p {
+  font-size: 1.5em;
   margin: 10px 0;
 }
 
 button {
-  margin-top: 30px; 
-  padding: 12px 30px; 
+  margin-top: 30px;
+  padding: 12px 30px;
   font-size: 1.2em;
-  color: white; 
-  background-color: #0066ff; 
+  color: white;
+  background-color: #0066ff;
   border: none;
-  border-radius: 5px; 
-  cursor: pointer; 
+  border-radius: 5px;
+  cursor: pointer;
   transition: all 0.3s;
   outline: none;
+  pointer-events: auto;
 }
 
-button:hover { 
-  background-color: #0088ff; 
-  transform: scale(1.05); 
+button:hover {
+  background-color: #0088ff;
+  transform: scale(1.05);
 }
 
 button:active {
