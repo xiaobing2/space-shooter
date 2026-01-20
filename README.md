@@ -1,5 +1,44 @@
-# Vue 3 + TypeScript + Vite
+# 3D 太空射击游戏
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+**本项目由阿里云ESA提供加速、计算和保护**
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+---
+
+## 项目介绍
+
+本项目是一款基于 Three.js 和 Cannon.js 构建的 3D 太空射击网页游戏。旨在探索现代前端技术在游戏开发领域的应用，并充分利用阿里云ESA Pages的边缘计算能力，为玩家提供低延迟、高性能的互动体验。
+
+- **应用价值**：作为一款经典的街机风格游戏，它具备很强的娱乐性和快速传播的潜力。同时，该项目也是一个优秀的学习范例，展示了如何将 3D 图形渲染、物理引擎与现代前端框架（Vue 3）结合，开发者可以轻松部署和二次开发。
+
+- **创意卓越**：游戏通过程序化生成的星空背景和敌人、流畅的飞船操控以及动态的爆炸粒子效果，在浏览器中创造了沉浸式的视觉体验。界面设计简洁直观，实现了开始、游戏、结束的完整流程，让玩家可以立即上手。
+
+- **技术探索**：项目深度整合了 **Three.js**（3D渲染）和 **Cannon.js**（物理引擎），在 Vue 3 框架内实现了复杂的实时状态管理、游戏循环、精确的碰撞检测以及动态对象的创建与销毁。这充分展示了在边缘网络上构建高性能、重交互应用的潜力。
+
+## 功能
+
+- **完整的游戏流程**：包含开始、游戏和结束界面。
+- **玩家控制**：使用 `WASD` 或方向键移动，通过鼠标左键或空格键射击。
+- **敌人 AI**：敌人会自动生成并追踪玩家。
+- **碰撞与得分**：子弹击中敌人会得分并触发爆炸效果，与敌人碰撞会减少生命值。
+- **游戏结束与重玩**：生命值耗尽后游戏结束，可以重新开始。
+
+## 技术栈
+
+- **Vue 3** + **Vite**：作为前端框架和构建工具。
+- **Three.js**：用于 3D 渲染。
+- **Cannon.js**：用于物理引擎。
+- **TypeScript**：用于代码开发。
+
+## 如何运行
+
+1. **安装依赖**：
+   ```bash
+   npm install
+   ```
+
+2. **启动开发服务器**：
+   ```bash
+   npm run dev
+   ```
+
+3. 在浏览器中打开显示的地址（通常是 `http://localhost:5173`）。
