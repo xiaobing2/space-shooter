@@ -368,8 +368,9 @@ onMounted(() => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
 
-  // 物理世界设置
-  world = new CANNON.World({ gravity: new CANNON.Vec3(0, 0, 0) });
+  // 物理世界设置（cannon 的 World 构造函数在当前类型定义中不接收参数）
+  world = new CANNON.World();
+  world.gravity.set(0, 0, 0);
 
   // 光源设置
   scene.add(new THREE.AmbientLight(0x404040));
