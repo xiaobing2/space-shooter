@@ -1,11 +1,11 @@
 <template>
-  <div ref="gameContainer" class="game-container" @click="handleClick">
+  <div class="game-container" @click="handleClick">
     <canvas ref="gameCanvas" class="game-canvas"></canvas>
     
     <!-- 游戏HUD -->
     <div class="hud" v-if="gameState === 'playing'">
       <div class="score">分数: {{ score }}</div>
-      <div class="health">生命: {{ health }}/100</div>
+      <div class="health">生命: {{ health }}/150</div>
       <div class="ammo">子弹: {{ maxBullets - bullets.length }}/{{ maxBullets }}</div>
       <div class="enemies">敌人: {{ enemies.length }}</div>
     </div>
@@ -33,14 +33,13 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon';
 
 // DOM 引用
-const gameContainer = ref<HTMLElement | null>(null);
 const gameCanvas = ref<HTMLCanvasElement | null>(null);
 
 // 游戏状态
 const gameState = ref<'start' | 'playing' | 'gameover'>('start');
 const score = ref(0);
-const health = ref(150); // 调低难度：提升初始生命
-const maxBullets = 10;   // 提升弹药上限
+const health = ref(150);
+const maxBullets = 10;
 const bullets = ref<Array<{mesh: THREE.Mesh, body: CANNON.Body, lifetime: number}>>([]);
 const enemies = ref<Array<{mesh: THREE.Mesh, body: CANNON.Body, health: number}>>([]);
 const explosions = ref<Array<{mesh: THREE.Points, lifetime: number}>>([]);
@@ -55,7 +54,7 @@ let player: THREE.Mesh;
 let playerBody: CANNON.Body;
 let playerRotation = 0;
 let lastEnemySpawn = 0;
-const enemySpawnInterval = 4000; // 放慢节奏：每4秒生成一批敌人
+const enemySpawnInterval = 4000;
 let gameLoopId: number;
 
 const keys: Record<string, boolean> = {};
@@ -81,7 +80,7 @@ const gameOver = () => {
 
 const resetGame = () => {
   score.value = 0;
-  health.value = 100;
+  health.value = 150;
   
   if (playerBody) {
     playerBody.position.set(0, 0, 0);
@@ -92,10 +91,18 @@ const resetGame = () => {
 };
 
 const cleanupGame = () => {
-  bullets.value.forEach(b => { scene.remove(b.mesh); world.removeBody(b.body); });
+  bullets.value.forEach(b => { 
+    scene.remove(b.mesh); 
+    world.remove(b.body); 
+  });
   bullets.value = [];
-  enemies.value.forEach(e => { scene.remove(e.mesh); world.removeBody(e.body); });
+  
+  enemies.value.forEach(e => { 
+    scene.remove(e.mesh); 
+    world.remove(e.body); 
+  });
   enemies.value = [];
+  
   explosions.value.forEach(e => scene.remove(e.mesh));
   explosions.value = [];
 };
@@ -123,15 +130,20 @@ const createBullet = (position: THREE.Vector3, direction: THREE.Vector3) => {
   scene.add(mesh);
 
   const shape = new CANNON.Sphere(0.1);
-  const body = new CANNON.Body({ mass: 0.1, position: new CANNON.Vec3().copy(position as any), shape, linearDamping: 0 });
+  const body = new CANNON.Body({ 
+    mass: 0.1, 
+    position: new CANNON.Vec3(position.x, position.y, 0), 
+    shape, 
+    linearDamping: 0 
+  });
+  
   const speed = 20;
   body.velocity.set(direction.x * speed, direction.y * speed, 0);
   world.addBody(body);
-  bullets.value.push({ mesh, body, lifetime: 3.0 }); // 子弹寿命稍长，提升可玩性
+  bullets.value.push({ mesh, body, lifetime: 3.0 });
 };
 
 const createEnemy = () => {
-  // 控制场上最大敌人数量，避免难度过高
   if (enemies.value.length >= 8) return;
 
   const angle = Math.random() * Math.PI * 2;
@@ -146,7 +158,12 @@ const createEnemy = () => {
   scene.add(mesh);
 
   const shape = new CANNON.Box(new CANNON.Vec3(0.6, 0.6, 0.6));
-  const body = new CANNON.Body({ mass: 1, position: new CANNON.Vec3(x, y, 0), shape, linearDamping: 0.4 }); // 提高阻尼，减速
+  const body = new CANNON.Body({ 
+    mass: 1, 
+    position: new CANNON.Vec3(x, y, 0), 
+    shape, 
+    linearDamping: 0.4 
+  });
   world.addBody(body);
   enemies.value.push({ mesh, body, health: 1 });
 };
@@ -168,82 +185,132 @@ const handleClick = () => {
 // 游戏循环与更新
 const updateBullets = (dt: number) => {
   for (let i = bullets.value.length - 1; i >= 0; i--) {
-    const b = bullets.value[i];
-    b.lifetime -= dt;
-    b.mesh.position.copy(b.body.position as any);
-    if (b.lifetime <= 0 || Math.abs(b.body.position.x) > 25 || Math.abs(b.body.position.y) > 25) {
-      scene.remove(b.mesh);
-      world.removeBody(b.body);
+    const bullet = bullets.value[i];
+    if (!bullet) continue;
+    
+    bullet.lifetime -= dt;
+    bullet.mesh.position.copy(bullet.body.position as any);
+    
+    if (bullet.lifetime <= 0 || 
+        Math.abs(bullet.body.position.x) > 25 || 
+        Math.abs(bullet.body.position.y) > 25) {
+      scene.remove(bullet.mesh);
+      world.remove(bullet.body);
       bullets.value.splice(i, 1);
     }
   }
 };
 
-const updateEnemies = (dt: number) => {
+const updateEnemies = (_dt: number) => {
   if (performance.now() - lastEnemySpawn > enemySpawnInterval) {
     createEnemy();
     lastEnemySpawn = performance.now();
   }
-  for (const e of enemies.value) {
-    e.mesh.position.copy(e.body.position as any);
-    const dir = new THREE.Vector3().subVectors(player.position, e.mesh.position);
+  
+  for (const enemy of enemies.value) {
+    if (!enemy) continue;
+    
+    enemy.mesh.position.copy(enemy.body.position as any);
+    const dir = new THREE.Vector3().subVectors(player.position, enemy.mesh.position);
     const len = dir.length();
     if (len > 0.0001) {
       dir.normalize();
     }
-    const enemySpeed = 1.1; // 降低敌人速度
-    e.body.velocity.set(dir.x * enemySpeed, dir.y * enemySpeed, 0);
-    e.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    const enemySpeed = 1.1;
+    enemy.body.velocity.set(dir.x * enemySpeed, dir.y * enemySpeed, 0);
+    enemy.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
   }
 };
 
 const updateExplosions = (dt: number) => {
   for (let i = explosions.value.length - 1; i >= 0; i--) {
-    const e = explosions.value[i];
-    e.lifetime -= dt;
-    (e.mesh.material as THREE.PointsMaterial).opacity = e.lifetime;
-    if (e.lifetime <= 0) {
-      scene.remove(e.mesh);
+    const explosion = explosions.value[i];
+    if (!explosion) continue;
+    
+    explosion.lifetime -= dt;
+    (explosion.mesh.material as THREE.PointsMaterial).opacity = explosion.lifetime;
+    
+    if (explosion.lifetime <= 0) {
+      scene.remove(explosion.mesh);
       explosions.value.splice(i, 1);
     }
   }
 };
 
 const checkCollisions = () => {
+  // 子弹与敌人的碰撞检测
   for (let i = bullets.value.length - 1; i >= 0; i--) {
+    const bullet = bullets.value[i];
+    if (!bullet) continue;
+    
     for (let j = enemies.value.length - 1; j >= 0; j--) {
-      const b = bullets.value[i];
-      const e = enemies.value[j];
-            if (b && e && b.body.position.distanceTo(e.body.position) < 1) {
-        createExplosion(e.mesh.position);
+      const enemy = enemies.value[j];
+      if (!enemy) continue;
+      
+      const distance = bullet.body.position.distanceTo(enemy.body.position);
+      if (distance < 1) {
+        // 创建爆炸效果
+        createExplosion(new THREE.Vector3().copy(enemy.mesh.position));
+        
+        // 增加分数
         score.value += 10;
-        scene.remove(e.mesh); world.removeBody(e.body); enemies.value.splice(j, 1);
-        scene.remove(b.mesh); world.removeBody(b.body); bullets.value.splice(i, 1);
+        
+        // 移除敌人
+        scene.remove(enemy.mesh);
+        world.remove(enemy.body);
+        enemies.value.splice(j, 1);
+        
+        // 移除子弹
+        scene.remove(bullet.mesh);
+        world.remove(bullet.body);
+        bullets.value.splice(i, 1);
+        
+        // 跳出内层循环，因为子弹已经被移除
         break;
       }
     }
   }
+  
+  // 玩家与敌人的碰撞检测
   for (let i = enemies.value.length - 1; i >= 0; i--) {
-    const e = enemies.value[i];
-        if (e.body.position.distanceTo(playerBody.position) < 1.2) {
-      createExplosion(e.mesh.position);
+    const enemy = enemies.value[i];
+    if (!enemy) continue;
+    
+    const distance = enemy.body.position.distanceTo(playerBody.position);
+    if (distance < 1.2) {
+      // 创建爆炸效果
+      createExplosion(new THREE.Vector3().copy(enemy.mesh.position));
+      
+      // 减少玩家生命值
       health.value -= 20;
-      scene.remove(e.mesh); world.removeBody(e.body); enemies.value.splice(i, 1);
-      if (health.value <= 0) { health.value = 0; gameOver(); }
+      
+      // 移除敌人
+      scene.remove(enemy.mesh);
+      world.remove(enemy.body);
+      enemies.value.splice(i, 1);
+      
+      // 检查游戏是否结束
+      if (health.value <= 0) {
+        health.value = 0;
+        gameOver();
+        return; // 游戏结束，直接返回
+      }
     }
   }
 };
 
-const updatePlayer = (dt: number) => {
+const updatePlayer = (_dt: number) => {
   const speed = 10;
   const moveVector = new THREE.Vector3();
   if (keys['KeyW'] || keys['ArrowUp']) moveVector.y += 1;
   if (keys['KeyS'] || keys['ArrowDown']) moveVector.y -= 1;
   if (keys['KeyA'] || keys['ArrowLeft']) moveVector.x -= 1;
   if (keys['KeyD'] || keys['ArrowRight']) moveVector.x += 1;
+  
   moveVector.normalize().multiplyScalar(speed);
   playerBody.velocity.set(moveVector.x, moveVector.y, 0);
   player.position.copy(playerBody.position as any);
+  
   if (moveVector.lengthSq() > 0) {
     playerRotation = Math.atan2(moveVector.x, -moveVector.y);
     player.rotation.z = playerRotation;
@@ -269,11 +336,18 @@ const gameLoop = () => {
 
 // 初始化
 onMounted(() => {
+  if (!gameCanvas.value) return;
+  
   // Scene setup
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.z = 15;
-  renderer = new THREE.WebGLRenderer({ canvas: gameCanvas.value!, antialias: true });
+  
+  renderer = new THREE.WebGLRenderer({ 
+    canvas: gameCanvas.value, 
+    antialias: true 
+  });
+  
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -291,23 +365,45 @@ onMounted(() => {
   const playerMat = new THREE.MeshPhongMaterial({ color: 0x00ff00, flatShading: true });
   player = new THREE.Mesh(playerGeo, playerMat);
   scene.add(player);
+  
   const playerShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
-  playerBody = new CANNON.Body({ mass: 1, position: new CANNON.Vec3(0, 0, 0), shape: playerShape, linearDamping: 0.8 });
+  playerBody = new CANNON.Body({ 
+    mass: 1, 
+    position: new CANNON.Vec3(0, 0, 0), 
+    shape: playerShape, 
+    linearDamping: 0.8 
+  });
+  
   world.addBody(playerBody);
 
   // Event Listeners
-  window.addEventListener('resize', () => {
+  const onResize = () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+  };
+  
+  const onKeyDown = (e: KeyboardEvent) => { 
+    keys[e.code] = true; 
+    if (e.code === 'Space') shoot(); 
+  };
+  
+  const onKeyUp = (e: KeyboardEvent) => { 
+    keys[e.code] = false; 
+  };
+  
+  window.addEventListener('resize', onResize);
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+  
+  // 清理函数
+  onUnmounted(() => {
+    window.removeEventListener('resize', onResize);
+    window.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener('keyup', onKeyUp);
+    cancelAnimationFrame(gameLoopId);
+    cleanupGame();
   });
-  window.addEventListener('keydown', (e) => { keys[e.code] = true; if (e.code === 'Space') shoot(); });
-  window.addEventListener('keyup', (e) => { keys[e.code] = false; });
-});
-
-onUnmounted(() => {
-  cancelAnimationFrame(gameLoopId);
-  // Cleanup listeners if needed
 });
 </script>
 
@@ -338,6 +434,7 @@ onUnmounted(() => {
   top: 20px;
   left: 20px;
   text-align: left;
+  pointer-events: none;
 }
 
 .hud > div {
@@ -345,10 +442,14 @@ onUnmounted(() => {
   padding: 5px 10px;
   background-color: rgba(0, 0, 0, 0.5);
   border-radius: 4px;
+  display: inline-block;
+  margin-right: 10px;
 }
 
 .start-screen, .game-over {
-  top: 0; left: 0; height: 100%;
+  top: 0; 
+  left: 0; 
+  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -356,14 +457,58 @@ onUnmounted(() => {
   background-color: rgba(0, 0, 0, 0.7);
 }
 
-h1 { font-size: 4em; text-shadow: 0 0 10px #00ffff; }
-p { font-size: 1.5em; }
-
-button {
-  margin-top: 30px; padding: 12px 30px; font-size: 1.2em;
-  color: white; background-color: #0066ff; border: none;
-  border-radius: 5px; cursor: pointer; transition: all 0.3s;
+h1 { 
+  font-size: 4em; 
+  text-shadow: 0 0 10px #00ffff; 
+  margin-bottom: 20px;
 }
 
-button:hover { background-color: #0088ff; transform: scale(1.05); }
+p { 
+  font-size: 1.5em; 
+  margin: 10px 0;
+}
+
+button {
+  margin-top: 30px; 
+  padding: 12px 30px; 
+  font-size: 1.2em;
+  color: white; 
+  background-color: #0066ff; 
+  border: none;
+  border-radius: 5px; 
+  cursor: pointer; 
+  transition: all 0.3s;
+  outline: none;
+}
+
+button:hover { 
+  background-color: #0088ff; 
+  transform: scale(1.05); 
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2.5em;
+  }
+  
+  p {
+    font-size: 1.2em;
+  }
+  
+  button {
+    padding: 10px 20px;
+    font-size: 1em;
+  }
+  
+  .hud > div {
+    font-size: 0.9em;
+    padding: 3px 8px;
+    margin-bottom: 5px;
+  }
+}
 </style>
